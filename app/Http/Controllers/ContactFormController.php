@@ -1,0 +1,137 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StoreContactRequest;
+use App\Models\ContactForm;
+use App\Services\GetFormNameService;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+
+class ContactFormController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     */
+    public function index(Request $request)
+    {
+
+        $search = $request->search;
+        $query = ContactForm::search($search);
+
+        $contacts = $query->select("id", "name", "title","created_at")->paginate(20);
+
+//        $contacts = ContactForm::select("id", "name", "title","created_at")->get();
+
+        //$contacts = ContactForm::select("id", "name", "title","created_at")->paginate(20);
+
+        return view('contacts.index', compact("contacts"));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     */
+    public function create()
+    {
+        return view('contacts.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function store(StoreContactRequest $request)
+    {
+        //dd($request);
+        ContactForm::create([
+            'name' => $request->name,
+            'title' => $request->title,
+            'email' => $request->email,
+            'url' => $request->url,
+            'gender' => $request->gender,
+            'age' => $request->age,
+            'contact' => $request->contact,
+        ]);
+        return to_route("contacts.index");
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     */
+    public function show($id)
+    {
+        $contact = ContactForm::find($id);
+        if (!$contact) {
+            throw new NotFoundHttpException();
+        }
+        $gender = GetFormNameService::getGenderName($contact);
+        $age = GetFormNameService::getAgeName($contact);
+
+        return view('contacts.show', compact("contact", "age", "gender"));
+
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View
+     */
+    public function edit($id)
+    {
+        $contact = ContactForm::find($id);
+        if (!$contact) {
+            throw new NotFoundHttpException();
+        }
+        return view('contacts.edit', compact("contact"));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request, $id)
+    {
+        $contact = ContactForm::find($id);
+        $contact->name = $request->name;
+        $contact->title = $request->title;
+        $contact->email = $request->email;
+        $contact->url = $request->url;
+        $contact->gender = $request->gender;
+        $contact->age = $request->age;
+        $contact->contact = $request->contact;
+
+        $contact->save();
+        return to_route("contacts.index");
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroy($id)
+    {
+        $contact = ContactForm::find($id);
+        if (!$contact) {
+            throw new NotFoundHttpException();
+        }
+        $contact->delete();
+        return to_route("contacts.index");
+    }
+}
